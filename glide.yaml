@@ -1,0 +1,14 @@
+package: github.com/klstr/klstr
+import:
+- package: github.com/sirupsen/logrus
+  version: ^1.0.6
+- package: github.com/spf13/cobra
+  version: ^0.0.3
+- package: k8s.io/apimachinery
+  subpackages:
+  - pkg/apis/meta/v1
+- package: k8s.io/client-go
+  version: ^8.0.0
+  subpackages:
+  - kubernetes
+  - tools/clientcmd
