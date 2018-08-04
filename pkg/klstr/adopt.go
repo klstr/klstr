@@ -29,7 +29,11 @@ func AdoptCluster(ao *AdoptOptions) {
 		log.Errorf("Unable to create client from config - %s", err.Error())
 		panic(err)
 	}
-	err = manifests.GetGrafanaDeployment(clientSet, "aws")
+	err = manifests.GetGrafanaDeployment(clientSet)
+	if err != nil {
+		panic(err)
+	}
+	err = manifests.GetGrafanaService(clientSet)
 	if err != nil {
 		panic(err)
 	}
