@@ -50,4 +50,9 @@ func (a *Adopter) AdoptCluster() {
 		log.Errorf("Unable to install grafana - %s", err)
 		return
 	}
+	err = manifests.NewOkLogInstaller(a.clientSet).InstallService()
+	if err != nil {
+		log.Errorf("Unable to install oklog - %s", err)
+		panic(err)
+	}
 }
