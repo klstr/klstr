@@ -14,11 +14,12 @@ func NewAdoptCommand() *cobra.Command {
 		Short: "Adopt a new kubernetes cluster",
 		Long:  "Adopts a new kubernetes cluster by installing klstr components",
 		Run: func(cmd *cobra.Command, args []string) {
-			klstr.AdoptCluster(&klstr.AdoptOptions{
+			adopter := klstr.NewAdopter(klstr.AdoptOptions{
 				KubeConfig:  kubeConfig,
 				SkipLogging: skipLogging,
 				SkipMetrics: skipMetrics,
 			})
+			adopter.AdoptCluster()
 		},
 	}
 	cmd.Flags().BoolVar(&skipLogging, "skip-logging", false, "Do not install elastic search logging stack")

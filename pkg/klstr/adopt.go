@@ -14,8 +14,16 @@ type AdoptOptions struct {
 	SkipLogging bool
 	SkipMetrics bool
 }
+type Adopter struct {
+	ao        AdoptOptions
+	clientSet *kubernetes.Clientset
+}
 
-func AdoptCluster(ao *AdoptOptions) {
+type ServiceInstaller interface {
+	InstallService() error
+}
+
+func NewAdopter(ao AdoptOptions) *Adopter {
 	if ao.KubeConfig == "" {
 		ao.KubeConfig = os.Getenv("KUBECONFIG")
 	}
@@ -29,12 +37,17 @@ func AdoptCluster(ao *AdoptOptions) {
 		log.Errorf("Unable to create client from config - %s", err.Error())
 		panic(err)
 	}
-	err = manifests.GetGrafanaDeployment(clientSet)
-	if err != nil {
-		panic(err)
+	adopter := &Adopter{
+		ao:        ao,
+		clientSet: clientSet,
 	}
-	err = manifests.GetGrafanaService(clientSet)
+	return adopter
+}
+
+func (a *Adopter) AdoptCluster() {
+	err := manifests.NewGrafanaInstaller(a.clientSet).InstallService()
 	if err != nil {
-		panic(err)
+		log.Errorf("Unable to install grafana - %s", err)
+		return
 	}
 }

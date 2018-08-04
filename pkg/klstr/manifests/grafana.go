@@ -8,12 +8,27 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
-	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
+
+type GrafanaInstaller struct {
+	cs *kubernetes.Clientset
+}
+
+func NewGrafanaInstaller(cs *kubernetes.Clientset) *GrafanaInstaller {
+	return &GrafanaInstaller{cs: cs}
+}
+
+func (gi *GrafanaInstaller) InstallService() error {
+	err := ensureGrafanaDeployment(gi.cs)
+	if err != nil {
+		return err
+	}
+	return ensureGrafanaService(gi.cs)
+}
 
 const GrafanaImage = "grafana/grafana:5.2.2"
 
-func GetGrafanaDeployment(cs *kubernetes.Clientset) error {
+func ensureGrafanaDeployment(cs *kubernetes.Clientset) error {
 	di := cs.AppsV1().Deployments("default")
 	deploymentList, err := di.List(metav1.ListOptions{LabelSelector: "app=grafana"})
 	if err != nil {
@@ -24,7 +39,7 @@ func GetGrafanaDeployment(cs *kubernetes.Clientset) error {
 		log.Infof("Found deployment %+v", deploymentList.Items[0])
 	} else {
 		log.Infof("creating deployment")
-		err = InstallGrafana(di)
+		err = createGrafanaDeployment(di)
 		if err != nil {
 			log.Errorf("unable to create deployment %v", err)
 			return err
@@ -32,21 +47,8 @@ func GetGrafanaDeployment(cs *kubernetes.Clientset) error {
 	}
 	return nil
 }
-func GetGrafanaService(cs *kubernetes.Clientset) error {
+func ensureGrafanaService(cs *kubernetes.Clientset) error {
 	si := cs.CoreV1().Services("default")
-	return CreateGrafanaService(si)
-}
-
-func InstallGrafana(di typedappsv1.DeploymentInterface) error {
-	dep, err := di.Create(getGrafanaDeplomentSpec())
-	if err != nil {
-		return err
-	}
-	log.Infof("Created a deployment ", dep)
-	return nil
-}
-
-func CreateGrafanaService(si typedcorev1.ServiceInterface) error {
 	s, err := si.Get("grafana", metav1.GetOptions{})
 	if err == nil {
 		log.Infof("Found grafana service %+v", s)
@@ -60,6 +62,16 @@ func CreateGrafanaService(si typedcorev1.ServiceInterface) error {
 	log.Infof("Created service %+v", s)
 	return nil
 }
+
+func createGrafanaDeployment(di typedappsv1.DeploymentInterface) error {
+	dep, err := di.Create(getGrafanaDeplomentSpec())
+	if err != nil {
+		return err
+	}
+	log.Infof("Created a deployment ", dep)
+	return nil
+}
+
 func getGrafanaServiceSpec() *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: getGrafanaMeta(),
