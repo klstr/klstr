@@ -1,11 +1,13 @@
 package manifests
 
 import (
+	"io/ioutil"
+
+	"github.com/klstr/klstr/pkg/klstr/util"
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 )
@@ -54,7 +56,12 @@ func ensureGrafanaService(cs *kubernetes.Clientset) error {
 		log.Infof("Found grafana service %+v", s)
 		return nil
 	}
-	s, err = si.Create(getGrafanaServiceSpec())
+	sobj, err := getGrafanaServiceSpecFromFile()
+	if err != nil {
+		log.Info("unable to decode from service file ", err)
+		return err
+	}
+	s, err = si.Create(sobj)
 	if err != nil {
 		log.Errorf("unable to create service %s", err)
 		return err
@@ -64,7 +71,11 @@ func ensureGrafanaService(cs *kubernetes.Clientset) error {
 }
 
 func createGrafanaDeployment(di typedappsv1.DeploymentInterface) error {
-	dep, err := di.Create(getGrafanaDeplomentSpec())
+	depObj, err := getGrafanaDeplomentSpecFromFile()
+	if err != nil {
+		return err
+	}
+	dep, err := di.Create(depObj)
 	if err != nil {
 		return err
 	}
@@ -72,51 +83,34 @@ func createGrafanaDeployment(di typedappsv1.DeploymentInterface) error {
 	return nil
 }
 
-func getGrafanaServiceSpec() *corev1.Service {
-	return &corev1.Service{
-		ObjectMeta: getGrafanaMeta(),
-		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{"app": "grafana"},
-			Ports: []corev1.ServicePort{
-				corev1.ServicePort{
-					TargetPort: intstr.FromInt(3000),
-					Name:       "grafana",
-					Port:       3000,
-				},
-			},
-		},
+func getGrafanaServiceSpecFromFile() (*corev1.Service, error) {
+	data, err := ioutil.ReadFile("k8s/monitoring/grafana-service.yaml")
+	if err != nil {
+		return nil, err
 	}
+	schemaDecoder := util.NewSchemaDecoder(data)
+	object := &corev1.Service{}
+	err = schemaDecoder.Decode(object)
+	if err != nil {
+		return nil, err
+	}
+	return object, nil
 }
 
-func getGrafanaDeplomentSpec() *appsv1.Deployment {
-	var replicaCount int32 = 1
-	deployment := &appsv1.Deployment{
-		ObjectMeta: getGrafanaMeta(),
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &replicaCount,
-			Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"app": "grafana"}},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: getGrafanaMeta(),
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						corev1.Container{
-							Image:           GrafanaImage,
-							Name:            "grafana",
-							ImagePullPolicy: corev1.PullAlways,
-							Ports:           []corev1.ContainerPort{corev1.ContainerPort{ContainerPort: 3000}},
-							Env: []corev1.EnvVar{
-								corev1.EnvVar{Name: "GF_AUTH_BASIC_ENABLED", Value: "false"},
-								corev1.EnvVar{Name: "GF_AUTH_ANONYMOUS_ENABLED", Value: "true"},
-								corev1.EnvVar{Name: "GF_AUTH_ANONYMOUS_ORG_ROLE", Value: "Admin"},
-							},
-						},
-					},
-				},
-			},
-		},
+func getGrafanaDeplomentSpecFromFile() (*appsv1.Deployment, error) {
+	data, err := ioutil.ReadFile("k8s/monitoring/grafana-deployment.yaml")
+	if err != nil {
+		return nil, err
 	}
-	return deployment
+	schemaDecoder := util.NewSchemaDecoder(data)
+	object := &appsv1.Deployment{}
+	err = schemaDecoder.Decode(object)
+	if err != nil {
+		return nil, err
+	}
+	return object, nil
 }
+
 func getGrafanaMeta() metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:   "grafana",

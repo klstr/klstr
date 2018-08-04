@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: oklog
+  labels:
+    app: oklog
+spec:
+  replicas: 3
+  serviceName: oklog
+  selector:
+    matchLabels:
+      app: oklog
+  template:
+    metadata:
+      name: oklog
+      labels:
+        app: oklog
+    spec:
+      containers:
+      - name: oklog
+        image: oklog/oklog:v0.3.2
+        imagePullPolicy: Always
+        env:
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+        ports:
+          - name: api
+            containerPort: 7650
+          - name: ingest-fast
+            containerPort: 7651
+          - name: ingest-durable
+            containerPort: 7652
+          - name: ingest-bulk
+            containerPort: 7653
+          - name: cluster
+            containerPort: 7659
+        args:
+          - ingeststore
+          - --debug
+          - --api=tcp://0.0.0.0:7650
+          - --ingest.fast=tcp://0.0.0.0:7651
+          - --ingest.durable=tcp://0.0.0.0:7652
+          - --ingest.bulk=tcp://0.0.0.0:7653
+          - --cluster=tcp://$(POD_IP):7659
+          - --peer=oklog-0.oklog
+          - --peer=oklog-1.oklog
+          - --peer=oklog-2.oklog
+        volumeMounts:
+          - name: oklog
+            mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: oklog
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      storageClassName: ssd
+      resources:
+        requests:
+          storage: 10Gi

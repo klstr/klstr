@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  name: oklog
+spec:
+  rules:
+  - host: oklog.dev.klstr.io
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: oklog
+          servicePort: 7650

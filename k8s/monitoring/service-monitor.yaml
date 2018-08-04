@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: reflector
+  labels:
+    team: frontend
+spec:
+  selector:
+    matchExpressions:
+    - key: app
+      operator: In
+      values:
+      - reflector
+      - randomapp
+      - oklog
+  endpoints:
+  - port: reflector
+  - port: randomapp
+  - targetPort: 7650

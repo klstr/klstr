@@ -1,12 +1,14 @@
 package manifests
 
 import (
+	"fmt"
+	"io/ioutil"
+
+	"github.com/klstr/klstr/pkg/klstr/util"
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -61,7 +63,11 @@ func ensureService(cs *kubernetes.Clientset) error {
 }
 
 func createStatefulSet(si typedappsv1.StatefulSetInterface) error {
-	sset, err := si.Create(getStatefulSetSpec())
+	ssObj, err := getStatefulSetSpecFromFile()
+	if err != nil {
+		return err
+	}
+	sset, err := si.Create(ssObj)
 	if err != nil {
 		log.Errorf("unable to create oklog deployment %v", err)
 		return err
@@ -72,111 +78,44 @@ func createStatefulSet(si typedappsv1.StatefulSetInterface) error {
 
 const OkLogImage = "oklog/oklog:v0.3.2"
 
-func getStatefulSetSpec() *appsv1.StatefulSet {
-	var replicaCount int32 = 3
-	var storageClassName = "ssd"
-	quantity, err := resource.ParseQuantity("10Gi")
+func getStatefulSetSpecFromFile() (*appsv1.StatefulSet, error) {
+	data, err := ioutil.ReadFile("k8s/logging/oklog-ss.yaml")
 	if err != nil {
-		log.Errorf("Error parsing resource quantity")
-		return nil
+		return nil, err
 	}
-	return &appsv1.StatefulSet{
-		ObjectMeta: getMeta(),
-		Spec: appsv1.StatefulSetSpec{
-			Replicas: &replicaCount,
-			Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"app": "oklog"}},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: getMeta(),
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						corev1.Container{
-							Name:            "oklog",
-							Image:           OkLogImage,
-							ImagePullPolicy: corev1.PullAlways,
-							Env: []corev1.EnvVar{
-								corev1.EnvVar{
-									Name: "POD_IP",
-									ValueFrom: &corev1.EnvVarSource{
-										FieldRef: &corev1.ObjectFieldSelector{
-											FieldPath: "status.podIP",
-										},
-									},
-								},
-								corev1.EnvVar{
-									Name: "POD_NAMESPACE",
-									ValueFrom: &corev1.EnvVarSource{
-										FieldRef: &corev1.ObjectFieldSelector{
-											FieldPath: "metadata.namespace",
-										},
-									},
-								},
-							},
-							Ports: []corev1.ContainerPort{
-								corev1.ContainerPort{
-									Name:          "api",
-									ContainerPort: 7650,
-								},
-								corev1.ContainerPort{
-									Name:          "ingest-fast",
-									ContainerPort: 7651,
-								},
-								corev1.ContainerPort{
-									Name:          "ingest-durable",
-									ContainerPort: 7652,
-								},
-								corev1.ContainerPort{
-									Name:          "ingest-bulk",
-									ContainerPort: 7653,
-								},
-								corev1.ContainerPort{
-									Name:          "cluster",
-									ContainerPort: 7659,
-								},
-							},
-							Args: []string{
-								"ingeststore",
-								"--debug",
-								"--api=tcp://0.0.0.0:7650",
-								"--ingest.fast=tcp://0.0.0.0:7651",
-								"--ingest.durable=tcp://0.0.0.0:7652",
-								"--ingest.bulk=tcp://0.0.0.0:7653",
-								"--cluster=tcp://$(POD_IP):7659",
-								"--peer=oklog-0.oklog",
-								"--peer=oklog-1.oklog",
-								"--peer=oklog-2.oklog",
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								corev1.VolumeMount{
-									Name:      "oklog",
-									MountPath: "/data",
-								},
-							},
-						},
-					},
-				},
-			},
-			VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
-				corev1.PersistentVolumeClaim{
-					ObjectMeta: getMeta(),
-					Spec: corev1.PersistentVolumeClaimSpec{
-						AccessModes: []corev1.PersistentVolumeAccessMode{
-							corev1.ReadWriteOnce,
-						},
-						StorageClassName: &storageClassName,
-						Resources: corev1.ResourceRequirements{
-							Requests: corev1.ResourceList{
-								corev1.ResourceStorage: quantity,
-							},
-						},
-					},
-				},
-			},
-		},
+	schemaDecoder := util.NewSchemaDecoder(data)
+	object := &appsv1.StatefulSet{}
+	err = schemaDecoder.Decode(object)
+	if err != nil {
+		return nil, err
 	}
+	buildOkLogArgs(object)
+	return object, nil
+}
+
+func buildOkLogArgs(object *appsv1.StatefulSet) {
+	prefix := object.ObjectMeta.Name
+	args := []string{
+		"ingeststore",
+		"--debug",
+		"--api=tcp://0.0.0.0:7650",
+		"--ingest.fast=tcp://0.0.0.0:7651",
+		"--ingest.durable=tcp://0.0.0.0:7652",
+		"--ingest.bulk=tcp://0.0.0.0:7653",
+		"--cluster=tcp://$(POD_IP):7659",
+	}
+	for i := 0; i < int(*object.Spec.Replicas); i++ {
+		args = append(args, fmt.Sprintf("--peer=%s-%d", prefix, i))
+	}
+	object.Spec.Template.Spec.Containers[0].Args = args
 }
 
 func createService(si typedcorev1.ServiceInterface) error {
-	svc, err := si.Create(getServiceSpec())
+	svcObj, err := getServiceSpecFromFile()
+	if err != nil {
+		return err
+	}
+	svc, err := si.Create(svcObj)
 	if err != nil {
 		log.Errorf("unable to create oklog service %s", err)
 		return err
@@ -185,46 +124,18 @@ func createService(si typedcorev1.ServiceInterface) error {
 	return nil
 }
 
-func getServiceSpec() *corev1.Service {
-	return &corev1.Service{
-		ObjectMeta: getMeta(),
-		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{"app": "oklog"},
-			Ports: []corev1.ServicePort{
-				corev1.ServicePort{
-					Name:       "api-default",
-					Port:       7650,
-					TargetPort: intstr.FromInt(7650),
-					Protocol:   corev1.ProtocolTCP,
-				},
-				corev1.ServicePort{
-					Name:       "ingest-fast",
-					Port:       7651,
-					TargetPort: intstr.FromInt(7651),
-					Protocol:   corev1.ProtocolTCP,
-				},
-				corev1.ServicePort{
-					Name:       "ingest-durable",
-					Port:       7652,
-					TargetPort: intstr.FromInt(7652),
-					Protocol:   corev1.ProtocolTCP,
-				},
-				corev1.ServicePort{
-					Name:       "ingest-bulk",
-					Port:       7653,
-					TargetPort: intstr.FromInt(7653),
-					Protocol:   corev1.ProtocolTCP,
-				},
-				corev1.ServicePort{
-					Name:       "cluster",
-					Port:       7659,
-					TargetPort: intstr.FromInt(7659),
-					Protocol:   corev1.ProtocolTCP,
-				},
-			},
-			ClusterIP: "None",
-		},
+func getServiceSpecFromFile() (*corev1.Service, error) {
+	data, err := ioutil.ReadFile("k8s/logging/oklog-service.yaml")
+	if err != nil {
+		return nil, err
 	}
+	schemaDecoder := util.NewSchemaDecoder(data)
+	object := &corev1.Service{}
+	err = schemaDecoder.Decode(object)
+	if err != nil {
+		return nil, err
+	}
+	return object, nil
 }
 
 func getMeta() metav1.ObjectMeta {
