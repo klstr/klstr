@@ -1,5 +1,5 @@
 hash: 8d1ee0f1b2c154cf1e5b096d3967a23b212fd5458e84a3a5ceb09f7346069340
-updated: 2018-07-25T14:31:57.943924+05:30
+updated: 2018-08-04T12:00:43.376566+05:30
 imports:
 - name: github.com/ghodss/yaml
   version: 73d445a93680fa1a78ae23a5839bad48f32ba1ee
@@ -58,13 +58,11 @@ imports:
   version: 1c05540f6879653db88113bc4a2b70aec4bd491f
   subpackages:
   - context
-  - html
-  - html/atom
+  - context/ctxhttp
   - http2
   - http2/hpack
   - idna
   - lex/httplex
-  - websocket
 - name: golang.org/x/sys
   version: 95c6576299259db960f6c5b9b69ea52422860fce
   subpackages:
