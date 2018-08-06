@@ -23,8 +23,12 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
+
 	RootCmd.PersistentFlags().StringVar(&kubeConfig, "kubeconfig", "", "kubeconfig to use for interacting with klstr")
+
 	RootCmd.AddCommand(NewAdoptCommand())
+	RootCmd.AddCommand(NewCreateCommand())
+	RootCmd.AddCommand(NewDeleteCommand())
 }
 
 func initConfig() {
