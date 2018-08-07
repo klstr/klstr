@@ -55,4 +55,9 @@ func (a *Adopter) AdoptCluster() {
 		log.Errorf("Unable to install oklog - %s", err)
 		panic(err)
 	}
+	err = manifests.NewPrometheusOperatorInstaller(a.clientSet).InstallService()
+	if err != nil {
+		log.Errorf("Unable to install prometheus operator - %s", err)
+		panic(err)
+	}
 }

@@ -84,13 +84,13 @@ func getStatefulSetSpecFromFile() (*appsv1.StatefulSet, error) {
 		return nil, err
 	}
 	schemaDecoder := util.NewSchemaDecoder(data)
-	object := &appsv1.StatefulSet{}
-	err = schemaDecoder.Decode(object)
+	object, err := schemaDecoder.Decode()
 	if err != nil {
 		return nil, err
 	}
-	buildOkLogArgs(object)
-	return object, nil
+	sobj := object.(*appsv1.StatefulSet)
+	buildOkLogArgs(sobj)
+	return sobj, nil
 }
 
 func buildOkLogArgs(object *appsv1.StatefulSet) {
@@ -130,12 +130,11 @@ func getServiceSpecFromFile() (*corev1.Service, error) {
 		return nil, err
 	}
 	schemaDecoder := util.NewSchemaDecoder(data)
-	object := &corev1.Service{}
-	err = schemaDecoder.Decode(object)
+	object, err := schemaDecoder.Decode()
 	if err != nil {
 		return nil, err
 	}
-	return object, nil
+	return object.(*corev1.Service), nil
 }
 
 func getMeta() metav1.ObjectMeta {

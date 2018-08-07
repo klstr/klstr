@@ -89,12 +89,11 @@ func getGrafanaServiceSpecFromFile() (*corev1.Service, error) {
 		return nil, err
 	}
 	schemaDecoder := util.NewSchemaDecoder(data)
-	object := &corev1.Service{}
-	err = schemaDecoder.Decode(object)
+	object, err := schemaDecoder.Decode()
 	if err != nil {
 		return nil, err
 	}
-	return object, nil
+	return object.(*corev1.Service), nil
 }
 
 func getGrafanaDeplomentSpecFromFile() (*appsv1.Deployment, error) {
@@ -103,12 +102,11 @@ func getGrafanaDeplomentSpecFromFile() (*appsv1.Deployment, error) {
 		return nil, err
 	}
 	schemaDecoder := util.NewSchemaDecoder(data)
-	object := &appsv1.Deployment{}
-	err = schemaDecoder.Decode(object)
+	object, err := schemaDecoder.Decode()
 	if err != nil {
 		return nil, err
 	}
-	return object, nil
+	return object.(*appsv1.Deployment), nil
 }
 
 func getGrafanaMeta() metav1.ObjectMeta {
