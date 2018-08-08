@@ -67,20 +67,19 @@ func createPrometheusOperator(cs *kubernetes.Clientset) error {
 }
 
 func createObject(cs *kubernetes.Clientset, object runtime.Object) error {
-	ot := object.GetObjectKind().GroupVersionKind().Kind
 	var kobj runtime.Object
 	var err error
-	switch ot {
-	case "Deployment":
-		kobj, err = cs.ExtensionsV1beta1().Deployments("default").Create(object.(*extnv1beta1.Deployment))
-	case "Service":
-		kobj, err = cs.CoreV1().Services("default").Create(object.(*corev1.Service))
-	case "ClusterRoleBinding":
-		kobj, err = cs.RbacV1beta1().ClusterRoleBindings().Create(object.(*rbacv1beta1.ClusterRoleBinding))
-	case "ClusterRole":
-		kobj, err = cs.RbacV1beta1().ClusterRoles().Create(object.(*rbacv1beta1.ClusterRole))
-	case "ServiceAccount":
-		kobj, err = cs.CoreV1().ServiceAccounts("default").Create(object.(*corev1.ServiceAccount))
+	switch o := object.(type) {
+	case *extnv1beta1.Deployment:
+		kobj, err = cs.ExtensionsV1beta1().Deployments("default").Create(o)
+	case *corev1.Service:
+		kobj, err = cs.CoreV1().Services("default").Create(o)
+	case *rbacv1beta1.ClusterRoleBinding:
+		kobj, err = cs.RbacV1beta1().ClusterRoleBindings().Create(o)
+	case *rbacv1beta1.ClusterRole:
+		kobj, err = cs.RbacV1beta1().ClusterRoles().Create(o)
+	case *corev1.ServiceAccount:
+		kobj, err = cs.CoreV1().ServiceAccounts("default").Create(o)
 	}
 	if err != nil {
 		log.Errorf("unable to create prometheus operator %v", err)
