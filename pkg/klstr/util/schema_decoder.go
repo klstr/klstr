@@ -18,9 +18,13 @@ func NewSchemaDecoder(data []byte) *SchemaDecoder {
 	return &SchemaDecoder{data: data}
 }
 
-func (sc *SchemaDecoder) Decode() (runtime.Object, error) {
+func (sc *SchemaDecoder) Decode(objects ...runtime.Object) (runtime.Object, error) {
 	decoder := scheme.Codecs.UniversalDeserializer()
-	object, _, err := decoder.Decode(sc.data, nil, nil)
+	var object runtime.Object
+	if len(objects) > 0 {
+		object = objects[0]
+	}
+	object, _, err := decoder.Decode(sc.data, nil, object)
 	return object, err
 }
 

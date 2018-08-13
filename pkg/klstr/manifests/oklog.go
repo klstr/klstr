@@ -23,14 +23,14 @@ func NewOkLogInstaller(cs *kubernetes.Clientset) *OkLogInstaller {
 }
 
 func (oi *OkLogInstaller) InstallService() error {
-	err := ensureStatefulSet(oi.cs)
+	err := ensureOkLogStatefulSet(oi.cs)
 	if err != nil {
 		return err
 	}
-	return ensureService(oi.cs)
+	return ensureOkLogService(oi.cs)
 }
 
-func ensureStatefulSet(cs *kubernetes.Clientset) error {
+func ensureOkLogStatefulSet(cs *kubernetes.Clientset) error {
 	si := cs.AppsV1().StatefulSets("default")
 	statefulList, err := si.List(metav1.ListOptions{LabelSelector: "app=oklog"})
 	if err != nil {
@@ -41,7 +41,7 @@ func ensureStatefulSet(cs *kubernetes.Clientset) error {
 		log.Infof("Found oklog statefulset: %+v", statefulList.Items[0])
 	} else {
 		log.Infof("creating oklog statefulset")
-		err = createStatefulSet(si)
+		err = createOkLogStatefulSet(si)
 		if err != nil {
 			log.Errorf("unable to create stateful set %v", err)
 			return err
@@ -50,20 +50,20 @@ func ensureStatefulSet(cs *kubernetes.Clientset) error {
 	return nil
 }
 
-func ensureService(cs *kubernetes.Clientset) error {
+func ensureOkLogService(cs *kubernetes.Clientset) error {
 	si := cs.CoreV1().Services("default")
 	s, err := si.Get("oklog", metav1.GetOptions{})
 	if err == nil {
 		log.Infof("Found oklog service %+v", s)
 		return nil
 	}
-	err = createService(si)
+	err = createOkLogService(si)
 	log.Info("Created oklog service %+v", s)
 	return nil
 }
 
-func createStatefulSet(si typedappsv1.StatefulSetInterface) error {
-	ssObj, err := getStatefulSetSpecFromFile()
+func createOkLogStatefulSet(si typedappsv1.StatefulSetInterface) error {
+	ssObj, err := getOkLogStatefulSetSpecFromFile()
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func createStatefulSet(si typedappsv1.StatefulSetInterface) error {
 
 const OkLogImage = "oklog/oklog:v0.3.2"
 
-func getStatefulSetSpecFromFile() (*appsv1.StatefulSet, error) {
+func getOkLogStatefulSetSpecFromFile() (*appsv1.StatefulSet, error) {
 	data, err := ioutil.ReadFile("k8s/logging/oklog-ss.yaml")
 	if err != nil {
 		return nil, err
@@ -110,8 +110,8 @@ func buildOkLogArgs(object *appsv1.StatefulSet) {
 	object.Spec.Template.Spec.Containers[0].Args = args
 }
 
-func createService(si typedcorev1.ServiceInterface) error {
-	svcObj, err := getServiceSpecFromFile()
+func createOkLogService(si typedcorev1.ServiceInterface) error {
+	svcObj, err := getOkLogServiceSpecFromFile()
 	if err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func createService(si typedcorev1.ServiceInterface) error {
 	return nil
 }
 
-func getServiceSpecFromFile() (*corev1.Service, error) {
+func getOkLogServiceSpecFromFile() (*corev1.Service, error) {
 	data, err := ioutil.ReadFile("k8s/logging/oklog-service.yaml")
 	if err != nil {
 		return nil, err
@@ -137,7 +137,7 @@ func getServiceSpecFromFile() (*corev1.Service, error) {
 	return object.(*corev1.Service), nil
 }
 
-func getMeta() metav1.ObjectMeta {
+func getOkLogMeta() metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:   "oklog",
 		Labels: map[string]string{"app": "oklog"},

@@ -12,3 +12,7 @@ import:
   subpackages:
   - kubernetes
   - tools/clientcmd
+- package: github.com/coreos/prometheus-operator
+  version: ^0.23.0
+- package: k8s.io/apiextensions-apiserver
+  version: kubernetes-1.11.0
