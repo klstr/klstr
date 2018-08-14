@@ -48,10 +48,59 @@ spec:
     targetPort: 3000
 `
 	sd := NewSchemaDecoder([]byte(serviceYaml))
-	obj := &prometheusopv1.Prometheus{}
-	_, err := sd.Decode(obj)
+	obj := &corev1.Service{}
+	object, err := sd.Decode(obj)
 	if err != nil {
 		t.Error("error decoding ", err)
+	}
+	_, ok := object.(*corev1.Service)
+	if !ok {
+		t.Error("object is of wrong type")
+	}
+}
+
+func TestDecodeWithArgPrometheus(t *testing.T) {
+	prometheusYaml := `
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: prometheus2
+spec:
+  serviceAccountName: prometheus
+  serviceMonitorSelector:
+    matchLabels:
+      team: frontend
+  resources:
+    requests:
+      memory: 400Mi
+  storage:
+    class: ssd
+    selector:
+      matchLabels:
+        name: ssd-prom-claim
+    resources:
+      requests:
+        storage: 10Gi
+    volumeClaimTemplate:
+      metadata:
+        name: ssd-prom-claim
+      spec:
+        storageClassName: ssd
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+`
+	sd := NewSchemaDecoder([]byte(prometheusYaml))
+	obj := &prometheusopv1.Prometheus{}
+	object, err := sd.Decode(obj)
+	if err != nil {
+		t.Error("error decoding ", err)
+	}
+	_, ok := object.(*prometheusopv1.Prometheus)
+	if !ok {
+		t.Error("object is of wrong type")
 	}
 }
 
