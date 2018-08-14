@@ -105,6 +105,9 @@ spec:
 	if err != nil {
 		t.Error("error decoding multi yaml ", err)
 	}
+	if len(objs) != 2 {
+		t.Error("error decoding multi yaml into correct number of objects ", err)
+	}
 	_, ok := objs[0].(*appsv1.Deployment)
 	if !ok {
 		t.Error("first object is not of type deployment ", err)
