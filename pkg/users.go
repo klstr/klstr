@@ -12,6 +12,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	certsv1beta1 "k8s.io/api/certificates/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	typedcertsv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
@@ -68,6 +70,11 @@ func NewUser(username, kubeConfig string) error {
 	}
 	log.Infof("Approved CSR : %+v", approvedCsr)
 
+	err = createPrivateNS(cs, username)
+	if err != nil {
+		return err
+	}
+
 	config, err := clientcmd.LoadFromFile(kubeConfig)
 	if err != nil {
 		return err
@@ -85,6 +92,7 @@ func NewUser(username, kubeConfig string) error {
 
 	ctxName := fmt.Sprintf("%s@%s", username, clusterName)
 	ctx := clientcmdapi.NewContext()
+	ctx.Namespace = username
 	ctx.Cluster = config.Contexts[config.CurrentContext].Cluster
 	ctx.AuthInfo = username
 	cfg.Contexts[ctxName] = ctx
@@ -160,4 +168,56 @@ func getKubeClientSet(kubeConfig string) (*kubernetes.Clientset, error) {
 	}
 	return kubernetes.NewForConfig(config)
 
+}
+
+func createPrivateNS(cs *kubernetes.Clientset, username string) error {
+	ns := corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: username,
+		},
+	}
+	createdNs, err := cs.Core().Namespaces().Create(&ns)
+	if err != nil {
+		return err
+	}
+	log.Infof("Created Namespace - %v", createdNs.Name)
+
+	role := rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-manager", username),
+			Namespace: username,
+		},
+		Rules: []rbacv1.PolicyRule{
+			rbacv1.PolicyRule{
+				APIGroups: []string{"*"},
+				Verbs:     []string{"*"},
+				Resources: []string{"*"},
+			},
+		},
+	}
+
+	newRole, err := cs.RbacV1().Roles(username).Create(&role)
+	if err != nil {
+		return err
+	}
+	log.Infof("Created Role %v", newRole)
+
+	rb := rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("%s-manager-binding", username),
+		},
+		Subjects: []rbacv1.Subject{
+			rbacv1.Subject{Kind: "User", Name: username},
+		},
+		RoleRef: rbacv1.RoleRef{
+			Kind: "Role",
+			Name: fmt.Sprintf("%s-manager", username),
+		},
+	}
+	newRb, err := cs.RbacV1().RoleBindings(username).Create(&rb)
+	if err != nil {
+		return err
+	}
+	log.Infof("Created Role binding - %v", newRb)
+	return nil
 }
