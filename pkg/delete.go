@@ -1,7 +1,7 @@
 package klstr
 
 import (
-	"github.com/klstr/klstr/pkg/klstr/providers"
+	"github.com/klstr/klstr/pkg/providers"
 	log "github.com/sirupsen/logrus"
 )
 

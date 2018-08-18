@@ -5,7 +5,7 @@ import (
 
 	prometheusop "github.com/coreos/prometheus-operator/pkg/client/monitoring"
 	prometheusopv1 "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
-	"github.com/klstr/klstr/pkg/klstr/manifests"
+	"github.com/klstr/klstr/pkg/manifests"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"

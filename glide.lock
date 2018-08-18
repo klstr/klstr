@@ -1,12 +1,12 @@
 hash: 463047aa6880ec5ffb228535bda372fe8ec5033d12ccb340420a4be410b35392
-updated: 2018-08-13T16:15:49.640426+05:30
+updated: 2018-08-17T11:42:53.97924+05:30
 imports:
 - name: github.com/ant31/crd-validation
   version: 38f6a293f140402953f884b015014e0cd519bbb3
   subpackages:
   - pkg
 - name: github.com/aws/aws-sdk-go
-  version: 3c6470de8dadcb7b069981a8a084ffface365c36
+  version: 91e1b0e1eaf2ae1786d669ab6ba47df466a9a3fd
   subpackages:
   - aws
   - aws/awserr
@@ -38,7 +38,7 @@ imports:
   - service/ec2
   - service/sts
 - name: github.com/coreos/prometheus-operator
-  version: 82ac49106139eee53f1d76e062782f2e8449dd45
+  version: ba92b2f232ef24684b9dc6bde03b74e1630909a6
   subpackages:
   - pkg/client/monitoring
   - pkg/client/monitoring/v1

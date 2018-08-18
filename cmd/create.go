@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/klstr/klstr/pkg/klstr"
+	klstr "github.com/klstr/klstr/pkg"
 	"github.com/spf13/cobra"
 )
 

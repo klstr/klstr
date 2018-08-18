@@ -6,7 +6,7 @@ import (
 	prometheusop "github.com/coreos/prometheus-operator/pkg/client/monitoring"
 	prometheusopv1 "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
 	k8sutil "github.com/coreos/prometheus-operator/pkg/k8sutil"
-	"github.com/klstr/klstr/pkg/klstr/util"
+	"github.com/klstr/klstr/pkg/util"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	extnv1beta1 "k8s.io/api/extensions/v1beta1"
