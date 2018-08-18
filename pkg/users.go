@@ -40,7 +40,7 @@ func NewUser(username, kubeConfig string) error {
 		Spec: certsv1beta1.CertificateSigningRequestSpec{
 			Request: csr.CSR,
 			Groups:  []string{"system:authenticated"},
-			Usages:  []certsv1beta1.KeyUsage{certsv1beta1.UsageAny},
+			Usages:  []certsv1beta1.KeyUsage{certsv1beta1.UsageClientAuth},
 		},
 	}
 	createdCsr, err := cs.CertificatesV1beta1().CertificateSigningRequests().Create(kubecsr)
