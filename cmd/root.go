@@ -30,6 +30,8 @@ func init() {
 	RootCmd.AddCommand(NewUsersCommand())
 	RootCmd.AddCommand(NewCreateCommand())
 	RootCmd.AddCommand(NewDeleteCommand())
+	RootCmd.AddCommand(NewDBInstancesCommand())
+	RootCmd.AddCommand(NewControllerCommand())
 }
 
 func initConfig() {

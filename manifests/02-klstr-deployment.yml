@@ -1,0 +1,25 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: klstr
+  namespace: klstr
+  labels:
+    app: klstr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: klstr
+  template:
+    metadata:
+      labels:
+        app: klstr
+    spec:
+      serviceAccountName: klstr
+      containers:
+        - name: klstr
+          image: quay.io/klstr/klstr:latest
+          imagePullPolicy: Never
+          command:
+            - /root/klstr
+            - controller

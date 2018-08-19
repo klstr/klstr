@@ -5,15 +5,16 @@ RUN curl -fsSL https://github.com/Masterminds/glide/releases/download/v0.13.1/gl
     && mv linux-amd64/glide /usr/bin/ \
     && rm -r linux-amd64 \
     && rm glide.tar.gz
+RUN git config --global http.sslVerify true
 
 WORKDIR /go/src/github.com/klstr/klstr
 COPY . .
-RUN glide up -v
+RUN glide i -v
 RUN make
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
-WORKDIR /root/
+WORKDIR /root
 EXPOSE 3000
 COPY --from=builder /go/src/github.com/klstr/klstr/klstr .
 CMD ["./klstr"]
