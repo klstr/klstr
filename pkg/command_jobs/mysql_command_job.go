@@ -12,6 +12,7 @@ type MySQLCommandJob struct {
 }
 
 func (mcj MySQLCommandJob) BuildCommand(object *batchv1.Job) {
+	object.Spec.Template.Spec.Containers[0].Image = "mysql"
 	command := []string{
 		"mysql",
 		"--host=$MYSQLHOST",

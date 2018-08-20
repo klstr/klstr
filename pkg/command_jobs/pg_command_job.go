@@ -12,6 +12,7 @@ type PGCommandJob struct {
 }
 
 func (pgcj PGCommandJob) BuildCommand(object *batchv1.Job) {
+	object.Spec.Template.Spec.Containers[0].Image = "postgres"
 	command := []string{
 		"psql",
 		"--host=$PGHOST",
