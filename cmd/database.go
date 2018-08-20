@@ -17,9 +17,10 @@ func NewDatabaseCommand() *cobra.Command {
 
 func newDBCloneCommand() *cobra.Command {
 	var (
-		dbname  string
-		dbtype  string
-		dbiname string
+		fromdbname string
+		todbname   string
+		dbtype     string
+		dbiname    string
 	)
 	cmd := &cobra.Command{
 		Use:   "clone",
@@ -27,16 +28,18 @@ func newDBCloneCommand() *cobra.Command {
 		Long:  "Clone an existing mysql or postgres database from one namespace to another",
 		Run: func(cmd *cobra.Command, args []string) {
 			err := klstr.CloneDB(&klstr.DatabaseConfig{
-				Name:    dbname,
-				DBType:  dbtype,
-				DBIName: dbiname,
+				FromDBName: fromdbname,
+				ToDBName:   todbname,
+				DBType:     dbtype,
+				DBIName:    dbiname,
 			}, kubeConfig)
 			if err != nil {
 				panic(err)
 			}
 		},
 	}
-	cmd.Flags().StringVar(&dbname, "name", "", "--name=dbname1")
+	cmd.Flags().StringVar(&fromdbname, "from-db", "", "--from-db=dbname1")
+	cmd.Flags().StringVar(&todbname, "to-db", "", "--to-db=dbname2")
 	cmd.Flags().StringVar(&dbtype, "type", "pg", "--type=pg/mysql")
 	cmd.Flags().StringVar(&dbiname, "instance-name", "", "--instance-name=db1")
 	return cmd

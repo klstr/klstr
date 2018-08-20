@@ -18,10 +18,10 @@ func (pgcj PGCommandJob) BuildCommand(object *batchv1.Job) {
 		"--host=$PGHOST",
 		"--port=$PGPORT",
 		"--username=$PGUSERNAME",
-		fmt.Sprintf("--command='create database %s with template=%s'", pgcj.options.DBName, pgcj.options.DBName),
+		fmt.Sprintf("--command='create database %s with template=%s'", pgcj.options.ToDBName, pgcj.options.FromDBName),
 	}
 	object.Spec.Template.Spec.Containers[0].Command = command
-	secretKeyName := fmt.Sprintf("%s-%s-%s", pgcj.options.DBIName, "pg", pgcj.options.DBName)
+	secretKeyName := fmt.Sprintf("%s-%s-%s", pgcj.options.DBIName, "pg", pgcj.options.FromDBName)
 	env := []corev1.EnvVar{
 		{
 			Name: "PGHOST",

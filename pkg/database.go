@@ -14,9 +14,10 @@ import (
 )
 
 type DatabaseConfig struct {
-	Name    string
-	DBType  string
-	DBIName string
+	FromDBName string
+	ToDBName   string
+	DBType     string
+	DBIName    string
 }
 
 type DatabaseJob struct {
@@ -79,8 +80,9 @@ func getJobFromFile(ji typedbatchv1.JobInterface, dc *DatabaseConfig) (*batchv1.
 
 func buildJobCommand(object *batchv1.Job, dc *DatabaseConfig) {
 	cj, err := command_jobs.CreateCommandJob(dc.DBType, command_jobs.CommandJobOptions{
-		DBName:  dc.Name,
-		DBIName: dc.DBIName,
+		FromDBName: dc.FromDBName,
+		ToDBName:   dc.ToDBName,
+		DBIName:    dc.DBIName,
 	})
 	if err != nil {
 		log.Errorf("unable to create command job %v", err)

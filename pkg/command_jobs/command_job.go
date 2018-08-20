@@ -9,8 +9,9 @@ import (
 )
 
 type CommandJobOptions struct {
-	DBName  string
-	DBIName string
+	FromDBName string
+	ToDBName   string
+	DBIName    string
 }
 
 type CommandJob interface {

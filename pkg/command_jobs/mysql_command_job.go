@@ -21,14 +21,14 @@ func (mcj MySQLCommandJob) BuildCommand(object *batchv1.Job) {
 		"--port=$MYSQLPORT",
 		"--user=$MYSQLUSERNAME",
 		"--password=$MYSQLPASSWORD",
-		fmt.Sprintf("--execute='create database %s'", mcj.options.DBName),
+		fmt.Sprintf("--execute='create database %s'", mcj.options.ToDBName),
 		"&&",
-		fmt.Sprintf("mysqldump %s", mcj.options.DBName),
+		fmt.Sprintf("mysqldump %s", mcj.options.FromDBName),
 		"|",
-		fmt.Sprintf("mysql %s", mcj.options.DBName),
+		fmt.Sprintf("mysql %s", mcj.options.ToDBName),
 	}
 	object.Spec.Template.Spec.Containers[0].Command = command
-	secretKeyName := fmt.Sprintf("%s-%s-%s", mcj.options.DBIName, "mysql", mcj.options.DBName)
+	secretKeyName := fmt.Sprintf("%s-%s-%s", mcj.options.DBIName, "mysql", mcj.options.FromDBName)
 	env := []corev1.EnvVar{
 		{
 			Name: "MYSQLHOST",
