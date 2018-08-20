@@ -28,7 +28,7 @@ func RegisterProviderFactory(name string, providerFactory ProviderFactory) {
 	}
 	_, registered := providerFactories[name]
 	if registered {
-		log.Errorf("Provider Factory %s already registered. Ignoring.")
+		log.Errorf("Provider Factory %s already registered. Ignoring.", name)
 		return
 	}
 	providerFactories[name] = providerFactory
