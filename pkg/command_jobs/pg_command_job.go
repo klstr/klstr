@@ -11,6 +11,8 @@ type PGCommandJob struct {
 	options CommandJobOptions
 }
 
+var _ CommandJob = PGCommandJob{}
+
 func (pgcj PGCommandJob) BuildCommand(object *batchv1.Job) {
 	object.Spec.Template.Spec.Containers[0].Image = "postgres"
 	command := []string{

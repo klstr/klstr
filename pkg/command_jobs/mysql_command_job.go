@@ -11,6 +11,8 @@ type MySQLCommandJob struct {
 	options CommandJobOptions
 }
 
+var _ CommandJob = MySQLCommandJob{}
+
 func (mcj MySQLCommandJob) BuildCommand(object *batchv1.Job) {
 	object.Spec.Template.Spec.Containers[0].Image = "mysql"
 	command := []string{
@@ -77,8 +79,6 @@ func (mcj MySQLCommandJob) BuildCommand(object *batchv1.Job) {
 	}
 	object.Spec.Template.Spec.Containers[0].Env = env
 }
-
-var _ CommandJob = MySQLCommandJob{}
 
 func NewMySQLCommandJob(options CommandJobOptions) CommandJob {
 	return &MySQLCommandJob{
