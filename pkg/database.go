@@ -83,6 +83,7 @@ func buildJobCommand(object *batchv1.Job, dc *DatabaseConfig) {
 		DBIName: dc.DBIName,
 	})
 	if err != nil {
+		log.Errorf("unable to create command job %v", err)
 	}
 	cj.BuildCommand(object)
 }
