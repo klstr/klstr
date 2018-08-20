@@ -14,12 +14,18 @@ type MySQLCommandJob struct {
 func (mcj MySQLCommandJob) BuildCommand(object *batchv1.Job) {
 	object.Spec.Template.Spec.Containers[0].Image = "mysql"
 	command := []string{
+		"/bin/bash",
+		"-c",
 		"mysql",
 		"--host=$MYSQLHOST",
 		"--port=$MYSQLPORT",
 		"--user=$MYSQLUSERNAME",
 		"--password=$MYSQLPASSWORD",
-		fmt.Sprintf("--execute='create database %s with template=%s'", mcj.options.DBName, mcj.options.DBName),
+		fmt.Sprintf("--execute='create database %s'", mcj.options.DBName),
+		"&&",
+		fmt.Sprintf("mysqldump %s", mcj.options.DBName),
+		"|",
+		fmt.Sprintf("mysql %s", mcj.options.DBName),
 	}
 	object.Spec.Template.Spec.Containers[0].Command = command
 	secretKeyName := fmt.Sprintf("%s-%s-%s", mcj.options.DBIName, "mysql", mcj.options.DBName)
