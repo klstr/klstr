@@ -15,14 +15,15 @@ func NewDBInstancesCommand() *cobra.Command {
 	return dbiCommand
 }
 
-var dbiname string
-var dbtype string
-var host string
-var port int
-var username string
-var password string
-
 func newDBIRegisterCommand() *cobra.Command {
+	var (
+		dbiname  string
+		dbtype   string
+		host     string
+		port     int
+		username string
+		password string
+	)
 	dbiRegisterCmd := &cobra.Command{
 		Use:   "register",
 		Short: "Register a database instance",

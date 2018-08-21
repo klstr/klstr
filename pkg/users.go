@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/klstr/klstr/pkg/util"
 	log "github.com/sirupsen/logrus"
 	certsv1beta1 "k8s.io/api/certificates/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -22,8 +23,7 @@ import (
 )
 
 func NewUser(username, kubeConfig string) error {
-
-	cs, err := getKubeClientSet(kubeConfig)
+	cs, err := util.NewKubeClient(kubeConfig)
 	if err != nil {
 		return err
 	}
@@ -158,16 +158,6 @@ func newCSR(username string) (*CSR, error) {
 	csrBytes := pem.EncodeToMemory(csrBlock)
 	pKeyBytes := pem.EncodeToMemory(pkeyBlock)
 	return &CSR{CSR: csrBytes, PrivateKey: pKeyBytes}, nil
-}
-
-func getKubeClientSet(kubeConfig string) (*kubernetes.Clientset, error) {
-
-	config, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
-	if err != nil {
-		return nil, err
-	}
-	return kubernetes.NewForConfig(config)
-
 }
 
 func createPrivateNS(cs *kubernetes.Clientset, username string) error {

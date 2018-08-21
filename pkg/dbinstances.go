@@ -1,15 +1,13 @@
 package klstr
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
+	"github.com/klstr/klstr/pkg/util"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 type DBInstanceRegistration struct {
@@ -22,16 +20,7 @@ type DBInstanceRegistration struct {
 }
 
 func RegisterDBInstance(dbr *DBInstanceRegistration, kubeconfig string) error {
-	if kubeconfig == "" {
-		return errors.New("Kubeconfig is empty")
-	}
-
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		return err
-	}
-
-	cs, err := kubernetes.NewForConfig(config)
+	cs, err := util.NewKubeClient(kubeconfig)
 	if err != nil {
 		return err
 	}

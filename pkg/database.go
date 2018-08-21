@@ -1,7 +1,6 @@
 package klstr
 
 import (
-	"errors"
 	"io/ioutil"
 
 	"github.com/klstr/klstr/pkg/command_jobs"
@@ -10,14 +9,13 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
 	typedbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 type DatabaseConfig struct {
-	FromDBName string
-	ToDBName   string
-	DBType     string
-	DBIName    string
+	DBName   string
+	ToDBName string
+	DBType   string
+	DBIName  string
 }
 
 type DatabaseJob struct {
@@ -25,15 +23,12 @@ type DatabaseJob struct {
 	dc *DatabaseConfig
 }
 
+func CreateDB(dc *DatabaseConfig, kubeconfig string) error {
+	return nil
+}
+
 func CloneDB(dc *DatabaseConfig, kubeconfig string) error {
-	if kubeconfig == "" {
-		return errors.New("Kubeconfig is empty")
-	}
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		return err
-	}
-	cs, err := kubernetes.NewForConfig(config)
+	cs, err := util.NewKubeClient(kubeconfig)
 	if err != nil {
 		return err
 	}
@@ -83,7 +78,7 @@ func getJobFromFile(ji typedbatchv1.JobInterface, dc *DatabaseConfig) (*batchv1.
 
 func buildJobCommand(object *batchv1.Job, dc *DatabaseConfig) error {
 	cj, err := command_jobs.CreateCommandJob(dc.DBType, command_jobs.CommandJobOptions{
-		FromDBName: dc.FromDBName,
+		FromDBName: dc.DBName,
 		ToDBName:   dc.ToDBName,
 		DBIName:    dc.DBIName,
 	})
