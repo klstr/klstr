@@ -9,13 +9,14 @@ import (
 )
 
 type CommandJobOptions struct {
-	FromDBName string
-	ToDBName   string
-	DBIName    string
+	DBName   string
+	ToDBName string
+	DBIName  string
 }
 
 type CommandJob interface {
-	BuildCommand(object *batchv1.Job)
+	BuildCreateCommand(object *batchv1.Job)
+	BuildCloneCommand(object *batchv1.Job)
 }
 
 type CommandJobFactory func(options CommandJobOptions) CommandJob

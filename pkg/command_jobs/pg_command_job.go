@@ -13,18 +13,9 @@ type PGCommandJob struct {
 
 var _ CommandJob = PGCommandJob{}
 
-func (pgcj PGCommandJob) BuildCommand(object *batchv1.Job) {
-	object.Spec.Template.Spec.Containers[0].Image = "postgres"
-	command := []string{
-		"psql",
-		"--host=$PGHOST",
-		"--port=$PGPORT",
-		"--username=$PGUSERNAME",
-		fmt.Sprintf("--command='create database %s with template=%s'", pgcj.options.ToDBName, pgcj.options.FromDBName),
-	}
-	object.Spec.Template.Spec.Containers[0].Command = command
-	secretKeyName := fmt.Sprintf("%s-%s-%s", pgcj.options.DBIName, "pg", pgcj.options.FromDBName)
-	env := []corev1.EnvVar{
+func (pgcj PGCommandJob) getJobEnv() []corev1.EnvVar {
+	secretKeyName := fmt.Sprintf("%s-%s-%s", pgcj.options.DBIName, "pg", pgcj.options.DBName)
+	return []corev1.EnvVar{
 		{
 			Name: "PGHOST",
 			ValueFrom: &corev1.EnvVarSource{
@@ -70,10 +61,41 @@ func (pgcj PGCommandJob) BuildCommand(object *batchv1.Job) {
 			},
 		},
 	}
-	object.Spec.Template.Spec.Containers[0].Env = env
 }
 
-var _ CommandJob = PGCommandJob{}
+func (pgcj PGCommandJob) getJobCommand(command []string) []string {
+	return append([]string{
+		"psql",
+		"--host=$PGHOST",
+		"--port=$PGPORT",
+		"--username=$PGUSERNAME",
+	}, command...)
+}
+
+func (pgcj PGCommandJob) BuildCloneCommand(object *batchv1.Job) {
+	object.Spec.Template.Spec.Containers[0].Image = "postgres"
+	cmd := []string{
+		fmt.Sprintf(
+			"--command='create database %s with template=%s'",
+			pgcj.options.ToDBName,
+			pgcj.options.DBName,
+		),
+	}
+	object.Spec.Template.Spec.Containers[0].Command = pgcj.getJobCommand(cmd)
+	object.Spec.Template.Spec.Containers[0].Env = pgcj.getJobEnv()
+}
+
+func (pgcj PGCommandJob) BuildCreateCommand(object *batchv1.Job) {
+	object.Spec.Template.Spec.Containers[0].Image = "postgres"
+	cmd := []string{
+		fmt.Sprintf(
+			"--command='create database %s'",
+			pgcj.options.DBName,
+		),
+	}
+	object.Spec.Template.Spec.Containers[0].Command = pgcj.getJobCommand(cmd)
+	object.Spec.Template.Spec.Containers[0].Env = pgcj.getJobEnv()
+}
 
 func NewPGCommandJob(options CommandJobOptions) CommandJob {
 	return &PGCommandJob{

@@ -13,25 +13,14 @@ type MySQLCommandJob struct {
 
 var _ CommandJob = MySQLCommandJob{}
 
-func (mcj MySQLCommandJob) BuildCommand(object *batchv1.Job) {
-	object.Spec.Template.Spec.Containers[0].Image = "mysql"
-	command := []string{
-		"/bin/bash",
-		"-c",
+func (mcj MySQLCommandJob) getJobEnv() []corev1.EnvVar {
+	secretKeyName := fmt.Sprintf(
+		"%s-%s-%s",
+		mcj.options.DBIName,
 		"mysql",
-		"--host=$MYSQLHOST",
-		"--port=$MYSQLPORT",
-		"--user=$MYSQLUSERNAME",
-		"--password=$MYSQLPASSWORD",
-		fmt.Sprintf("--execute='create database %s'", mcj.options.ToDBName),
-		"&&",
-		fmt.Sprintf("mysqldump %s", mcj.options.FromDBName),
-		"|",
-		fmt.Sprintf("mysql %s", mcj.options.ToDBName),
-	}
-	object.Spec.Template.Spec.Containers[0].Command = command
-	secretKeyName := fmt.Sprintf("%s-%s-%s", mcj.options.DBIName, "mysql", mcj.options.FromDBName)
-	env := []corev1.EnvVar{
+		mcj.options.DBName,
+	)
+	return []corev1.EnvVar{
 		{
 			Name: "MYSQLHOST",
 			ValueFrom: &corev1.EnvVarSource{
@@ -77,7 +66,40 @@ func (mcj MySQLCommandJob) BuildCommand(object *batchv1.Job) {
 			},
 		},
 	}
-	object.Spec.Template.Spec.Containers[0].Env = env
+}
+
+func (mcj MySQLCommandJob) getJobCommand(command []string) []string {
+	return append([]string{
+		"/bin/bash",
+		"-c",
+		"mysql",
+		"--host=$MYSQLHOST",
+		"--port=$MYSQLPORT",
+		"--user=$MYSQLUSERNAME",
+		"--password=$MYSQLPASSWORD",
+	}, command...)
+}
+
+func (mcj MySQLCommandJob) BuildCloneCommand(object *batchv1.Job) {
+	object.Spec.Template.Spec.Containers[0].Image = "mysql"
+	cmd := []string{
+		fmt.Sprintf("--execute='create database %s'", mcj.options.ToDBName),
+		"&&",
+		fmt.Sprintf("mysqldump %s", mcj.options.DBName),
+		"|",
+		fmt.Sprintf("mysql %s", mcj.options.ToDBName),
+	}
+	object.Spec.Template.Spec.Containers[0].Command = mcj.getJobCommand(cmd)
+	object.Spec.Template.Spec.Containers[0].Env = mcj.getJobEnv()
+}
+
+func (mcj MySQLCommandJob) BuildCreateCommand(object *batchv1.Job) {
+	object.Spec.Template.Spec.Containers[0].Image = "mysql"
+	cmd := []string{
+		fmt.Sprintf("--execute='create database %s'", mcj.options.ToDBName),
+	}
+	object.Spec.Template.Spec.Containers[0].Command = mcj.getJobCommand(cmd)
+	object.Spec.Template.Spec.Containers[0].Env = mcj.getJobEnv()
 }
 
 func NewMySQLCommandJob(options CommandJobOptions) CommandJob {

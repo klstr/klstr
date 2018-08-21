@@ -8,7 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
-	typedbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 )
 
 type DatabaseConfig struct {
@@ -24,6 +23,18 @@ type DatabaseJob struct {
 }
 
 func CreateDB(dc *DatabaseConfig, kubeconfig string) error {
+	cs, err := util.NewKubeClient(kubeconfig)
+	if err != nil {
+		return err
+	}
+	dj := DatabaseJob{
+		cs: cs,
+		dc: dc,
+	}
+	err = dj.CreateDBJob()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -43,9 +54,26 @@ func CloneDB(dc *DatabaseConfig, kubeconfig string) error {
 	return nil
 }
 
+func (dj *DatabaseJob) CreateDBJob() error {
+	ji := dj.cs.BatchV1().Jobs("klstr")
+	jobobj, err := getJobFromFile()
+	err = buildCreateJobCommand(jobobj, dj.dc)
+	if err != nil {
+		return err
+	}
+	job, err := ji.Create(jobobj)
+	if err != nil {
+		log.Errorf("unable to create db create job %v", err)
+		return err
+	}
+	log.Infof("Created db create job %+v", job)
+	return nil
+}
+
 func (dj *DatabaseJob) CreateCloneDBJob() error {
 	ji := dj.cs.BatchV1().Jobs("klstr")
-	jobobj, err := getJobFromFile(ji, dj.dc)
+	jobobj, err := getJobFromFile()
+	err = buildCloneJobCommand(jobobj, dj.dc)
 	if err != nil {
 		return err
 	}
@@ -58,7 +86,7 @@ func (dj *DatabaseJob) CreateCloneDBJob() error {
 	return nil
 }
 
-func getJobFromFile(ji typedbatchv1.JobInterface, dc *DatabaseConfig) (*batchv1.Job, error) {
+func getJobFromFile() (*batchv1.Job, error) {
 	data, err := ioutil.ReadFile("k8s/jobs/clone_db.yaml")
 	if err != nil {
 		return nil, err
@@ -68,24 +96,33 @@ func getJobFromFile(ji typedbatchv1.JobInterface, dc *DatabaseConfig) (*batchv1.
 	if err != nil {
 		return nil, err
 	}
-	job := object.(*batchv1.Job)
-	err = buildJobCommand(job, dc)
-	if err != nil {
-		return nil, err
-	}
-	return job, nil
+	return object.(*batchv1.Job), nil
 }
 
-func buildJobCommand(object *batchv1.Job, dc *DatabaseConfig) error {
+func buildCloneJobCommand(object *batchv1.Job, dc *DatabaseConfig) error {
 	cj, err := command_jobs.CreateCommandJob(dc.DBType, command_jobs.CommandJobOptions{
-		FromDBName: dc.DBName,
-		ToDBName:   dc.ToDBName,
-		DBIName:    dc.DBIName,
+		DBName:   dc.DBName,
+		ToDBName: dc.ToDBName,
+		DBIName:  dc.DBIName,
 	})
 	if err != nil {
 		log.Errorf("unable to create command job %v", err)
 		return err
 	}
-	cj.BuildCommand(object)
+	cj.BuildCloneCommand(object)
+	return nil
+}
+
+func buildCreateJobCommand(object *batchv1.Job, dc *DatabaseConfig) error {
+	cj, err := command_jobs.CreateCommandJob(dc.DBType, command_jobs.CommandJobOptions{
+		DBName:   dc.DBName,
+		ToDBName: dc.ToDBName,
+		DBIName:  dc.DBIName,
+	})
+	if err != nil {
+		log.Errorf("unable to create command job %v", err)
+		return err
+	}
+	cj.BuildCreateCommand(object)
 	return nil
 }

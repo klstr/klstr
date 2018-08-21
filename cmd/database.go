@@ -11,6 +11,7 @@ func NewDatabaseCommand() *cobra.Command {
 		Short: "db",
 		Long:  "Manage db",
 	}
+	cmd.AddCommand(newDBCreateCommand())
 	cmd.AddCommand(newDBCloneCommand())
 	return cmd
 }
