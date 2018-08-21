@@ -74,11 +74,14 @@ func getJobFromFile(ji typedbatchv1.JobInterface, dc *DatabaseConfig) (*batchv1.
 		return nil, err
 	}
 	job := object.(*batchv1.Job)
-	buildJobCommand(job, dc)
+	err = buildJobCommand(job, dc)
+	if err != nil {
+		return nil, err
+	}
 	return job, nil
 }
 
-func buildJobCommand(object *batchv1.Job, dc *DatabaseConfig) {
+func buildJobCommand(object *batchv1.Job, dc *DatabaseConfig) error {
 	cj, err := command_jobs.CreateCommandJob(dc.DBType, command_jobs.CommandJobOptions{
 		FromDBName: dc.FromDBName,
 		ToDBName:   dc.ToDBName,
@@ -86,6 +89,8 @@ func buildJobCommand(object *batchv1.Job, dc *DatabaseConfig) {
 	})
 	if err != nil {
 		log.Errorf("unable to create command job %v", err)
+		return err
 	}
 	cj.BuildCommand(object)
+	return nil
 }
