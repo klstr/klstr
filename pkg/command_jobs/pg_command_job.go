@@ -2,6 +2,7 @@ package command_jobs
 
 import (
 	"fmt"
+	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -14,7 +15,7 @@ type PGCommandJob struct {
 var _ CommandJob = PGCommandJob{}
 
 func (pgcj PGCommandJob) getJobEnv() []corev1.EnvVar {
-	secretKeyName := fmt.Sprintf("%s-%s-%s", pgcj.options.DBIName, "pg", pgcj.options.DBName)
+	secretKeyName := fmt.Sprintf("dbi-pg-%s", pgcj.options.DBIName)
 	return []corev1.EnvVar{
 		{
 			Name: "PGHOST",
@@ -66,17 +67,20 @@ func (pgcj PGCommandJob) getJobEnv() []corev1.EnvVar {
 func (pgcj PGCommandJob) getJobCommand(command []string) []string {
 	return append([]string{
 		"psql",
-		"--host=$PGHOST",
-		"--port=$PGPORT",
-		"--username=$PGUSERNAME",
+		"--host=$(PGHOST)",
+		"--port=$(PGPORT)",
+		"--username=$(PGUSERNAME)",
 	}, command...)
 }
 
 func (pgcj PGCommandJob) BuildCloneCommand(object *batchv1.Job) {
+	sid := time.Now().Unix()
+	fmt.Printf("object: %v", object)
+	object.ObjectMeta.Name = fmt.Sprintf("dbjob-clone-%d", sid)
 	object.Spec.Template.Spec.Containers[0].Image = "postgres"
 	cmd := []string{
 		fmt.Sprintf(
-			"--command='create database %s with template=%s'",
+			"--command=create database %s with template=%s",
 			pgcj.options.ToDBName,
 			pgcj.options.DBName,
 		),
@@ -86,10 +90,12 @@ func (pgcj PGCommandJob) BuildCloneCommand(object *batchv1.Job) {
 }
 
 func (pgcj PGCommandJob) BuildCreateCommand(object *batchv1.Job) {
+	sid := time.Now().Unix()
+	object.ObjectMeta.Name = fmt.Sprintf("dbjob-create-%d", sid)
 	object.Spec.Template.Spec.Containers[0].Image = "postgres"
 	cmd := []string{
 		fmt.Sprintf(
-			"--command='create database %s'",
+			"--command=create database %s",
 			pgcj.options.DBName,
 		),
 	}

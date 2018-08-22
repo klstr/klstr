@@ -87,7 +87,7 @@ func (dj *DatabaseJob) CreateCloneDBJob() error {
 }
 
 func getJobFromFile() (*batchv1.Job, error) {
-	data, err := ioutil.ReadFile("k8s/jobs/clone_db.yaml")
+	data, err := ioutil.ReadFile("k8s/jobs/dbjob.yaml")
 	if err != nil {
 		return nil, err
 	}

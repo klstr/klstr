@@ -2,6 +2,7 @@ package command_jobs
 
 import (
 	"fmt"
+	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -14,12 +15,7 @@ type MySQLCommandJob struct {
 var _ CommandJob = MySQLCommandJob{}
 
 func (mcj MySQLCommandJob) getJobEnv() []corev1.EnvVar {
-	secretKeyName := fmt.Sprintf(
-		"%s-%s-%s",
-		mcj.options.DBIName,
-		"mysql",
-		mcj.options.DBName,
-	)
+	secretKeyName := fmt.Sprintf("dbi-mysql-%s", mcj.options.DBIName)
 	return []corev1.EnvVar{
 		{
 			Name: "MYSQLHOST",
@@ -73,17 +69,19 @@ func (mcj MySQLCommandJob) getJobCommand(command []string) []string {
 		"/bin/bash",
 		"-c",
 		"mysql",
-		"--host=$MYSQLHOST",
-		"--port=$MYSQLPORT",
-		"--user=$MYSQLUSERNAME",
-		"--password=$MYSQLPASSWORD",
+		"--host=$(MYSQLHOST)",
+		"--port=$(MYSQLPORT)",
+		"--user=$(MYSQLUSERNAME)",
+		"--password=$(MYSQLPASSWORD)",
 	}, command...)
 }
 
 func (mcj MySQLCommandJob) BuildCloneCommand(object *batchv1.Job) {
+	sid := time.Now().Unix()
+	object.ObjectMeta.Name = fmt.Sprintf("dbjob-clone-%d", sid)
 	object.Spec.Template.Spec.Containers[0].Image = "mysql"
 	cmd := []string{
-		fmt.Sprintf("--execute='create database %s'", mcj.options.ToDBName),
+		fmt.Sprintf("--execute=create database %s", mcj.options.ToDBName),
 		"&&",
 		fmt.Sprintf("mysqldump %s", mcj.options.DBName),
 		"|",
@@ -94,9 +92,11 @@ func (mcj MySQLCommandJob) BuildCloneCommand(object *batchv1.Job) {
 }
 
 func (mcj MySQLCommandJob) BuildCreateCommand(object *batchv1.Job) {
+	sid := time.Now().Unix()
+	object.ObjectMeta.Name = fmt.Sprintf("dbjob-create-%d", sid)
 	object.Spec.Template.Spec.Containers[0].Image = "mysql"
 	cmd := []string{
-		fmt.Sprintf("--execute='create database %s'", mcj.options.ToDBName),
+		fmt.Sprintf("--execute=create database %s", mcj.options.ToDBName),
 	}
 	object.Spec.Template.Spec.Containers[0].Command = mcj.getJobCommand(cmd)
 	object.Spec.Template.Spec.Containers[0].Env = mcj.getJobEnv()

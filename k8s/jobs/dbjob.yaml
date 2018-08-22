@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: clone_db
+  name: dbjob
 spec:
   template:
     spec:
@@ -10,10 +10,9 @@ spec:
         image: postgres
         command:
           - psql
-          - --host=$PG_HOST
-          - --port=$PG_PORT
-          - --username=$PG_USERNAME
-          - --password=$PG_PASSWORD
+          - --host=$PGHOST
+          - --port=$PGPORT
+          - --username=$PGUSERNAME
         env:
           - name: PGHOST
             valueFrom:
