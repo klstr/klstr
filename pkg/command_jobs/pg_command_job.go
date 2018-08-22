@@ -75,7 +75,6 @@ func (pgcj PGCommandJob) getJobCommand(command []string) []string {
 
 func (pgcj PGCommandJob) BuildCloneCommand(object *batchv1.Job) {
 	sid := time.Now().Unix()
-	fmt.Printf("object: %v", object)
 	object.ObjectMeta.Name = fmt.Sprintf("dbjob-clone-%d", sid)
 	object.Spec.Template.Spec.Containers[0].Image = "postgres"
 	cmd := []string{
