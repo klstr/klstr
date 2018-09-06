@@ -35,7 +35,7 @@ func NewUser(username, kubeConfig string) error {
 	kubecsr := &certsv1beta1.CertificateSigningRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   username,
-			Labels: map[string]string{"name": "username"},
+			Labels: map[string]string{"name": username},
 		},
 		Spec: certsv1beta1.CertificateSigningRequestSpec{
 			Request: csr.CSR,
